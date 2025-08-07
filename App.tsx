@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -272,8 +273,8 @@ const App: React.FC = () => {
             await mutate(updateServerState('DELETE_ACTIVITY', { id: activityId }), {
                 optimisticData,
                 rollbackOnError: true,
-                populateCache: true,
-                revalidate: false
+                populateCache: false,
+                revalidate: true
             });
             playSuccessSound();
         }
@@ -350,8 +351,8 @@ const App: React.FC = () => {
             await mutate(updateServerState('DELETE_SERVICE', { name: serviceName }), {
                 optimisticData,
                 rollbackOnError: true,
-                populateCache: true,
-                revalidate: false,
+                populateCache: false,
+                revalidate: true,
             });
             playSuccessSound();
         }
