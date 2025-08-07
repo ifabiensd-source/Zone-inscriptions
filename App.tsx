@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -33,6 +34,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 const App: React.FC = () => {
   const { data, error, mutate } = useSWR<AppData>('/api/data', fetcher, {
     revalidateOnFocus: true,
+    refreshInterval: 5000, // Re-fetch data every 5 seconds
   });
 
   const activities = data?.activities;

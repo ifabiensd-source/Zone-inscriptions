@@ -1,4 +1,5 @@
 
+
 import { kv } from '@vercel/kv';
 import { Activity, AppData, Service, Theme } from '../types';
 import { INITIAL_ACTIVITIES, INITIAL_SERVICES } from '../constants';
@@ -31,7 +32,10 @@ export default async function handler(req: Request) {
       const data = await getAppData();
       return new Response(JSON.stringify(data), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, max-age=0'
+        },
       });
     }
 
@@ -59,7 +63,10 @@ export default async function handler(req: Request) {
         default:
           return new Response(JSON.stringify({ message: 'Invalid action type' }), {
             status: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store, max-age=0'
+            },
           });
       }
 
@@ -67,19 +74,28 @@ export default async function handler(req: Request) {
       
       return new Response(JSON.stringify(data), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store, max-age=0'
+        },
       });
     }
 
     return new Response(JSON.stringify({ message: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, max-age=0'
+      },
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An internal server error occurred';
     return new Response(JSON.stringify({ message: errorMessage }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, max-age=0'
+      },
     });
   }
 }
