@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -55,8 +50,34 @@ const App: React.FC = () => {
 
   const [loggedInUser, setLoggedInUser] = useState<LoggedInUser | null>(() => {
     if (typeof window === 'undefined') return null;
-    const storedUser = localStorage.getItem('loggedInUser');
-    return storedUser ? JSON.parse(storedUser) : null;
+    
+    // Admin session is persistent and takes priority
+    const storedAdmin = localStorage.getItem('loggedInUser');
+    if (storedAdmin) {
+        try {
+            const adminUser = JSON.parse(storedAdmin);
+            if (adminUser.type === 'admin') {
+                return adminUser;
+            }
+        } catch (e) {
+            localStorage.removeItem('loggedInUser');
+        }
+    }
+    
+    // Service session is temporary (per-tab)
+    const storedService = sessionStorage.getItem('loggedInUser');
+    if (storedService) {
+        try {
+            const serviceUser = JSON.parse(storedService);
+            if (serviceUser.type === 'service') {
+                return serviceUser;
+            }
+        } catch(e) {
+            sessionStorage.removeItem('loggedInUser');
+        }
+    }
+    
+    return null;
   });
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [serviceLoginError, setServiceLoginError] = useState<string | null>(null);
@@ -96,13 +117,22 @@ const App: React.FC = () => {
   };
   
   useEffect(() => {
-    // Persist only admin sessions to localStorage.
-    // Service sessions are not persisted, so they are logged out on refresh.
+    if (typeof window === 'undefined') return;
+
     if (loggedInUser?.type === 'admin') {
+        // Persist admin session
         localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
-    } else {
-        // This handles logout for admin, and ensures service user sessions are not stored.
+        // Clean up session storage in case we switched from service to admin
+        sessionStorage.removeItem('loggedInUser');
+    } else if (loggedInUser?.type === 'service') {
+        // Persist service session for the tab
+        sessionStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+        // Clean up local storage in case we switched from admin to service
         localStorage.removeItem('loggedInUser');
+    } else {
+        // User logged out, clear both
+        localStorage.removeItem('loggedInUser');
+        sessionStorage.removeItem('loggedInUser');
     }
   }, [loggedInUser]);
 
