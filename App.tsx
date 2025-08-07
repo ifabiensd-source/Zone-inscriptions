@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -136,7 +137,7 @@ const App: React.FC = () => {
   const handleRegister = useCallback(async (registrationData: RegistrationFormData) => {
     if (!selectedActivity || !data) return;
 
-    // Validation logic (can remain on client-side)
+    // Validation
     const isPublic = !selectedActivity.serviceAllocations || selectedActivity.serviceAllocations.length === 0;
     if (isPublic) {
         if (selectedActivity.registrations.length >= selectedActivity.spots) {
@@ -158,14 +159,14 @@ const App: React.FC = () => {
     }
 
     const newRegistration: Registration = { ...registrationData, id: Date.now() };
-    const newActivities = data.activities.map(act =>
+    const optimisticActivities = data.activities.map(act =>
         act.id === selectedActivity.id
             ? { ...act, registrations: [...act.registrations, newRegistration] }
             : act
     );
-
-    const optimisticData = { ...data, activities: newActivities };
-    await mutate(updateServerState('SET_ACTIVITIES', newActivities), {
+    const optimisticData = { ...data, activities: optimisticActivities };
+    
+    await mutate(updateServerState('REGISTER_YOUTH', { activityId: selectedActivity.id, registrationData }), {
         optimisticData,
         rollbackOnError: true,
         populateCache: true,
@@ -217,10 +218,10 @@ const App: React.FC = () => {
   const handleAddActivity = useCallback(async (formData: ActivityFormData) => {
     if (!data) return;
     const newActivity: Activity = { ...formData, id: Date.now(), registrations: [] };
-    const newActivities = [...data.activities, newActivity].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const optimisticActivities = [...data.activities, newActivity].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    const optimisticData = { ...data, activities: newActivities };
-    await mutate(updateServerState('SET_ACTIVITIES', newActivities), {
+    const optimisticData = { ...data, activities: optimisticActivities };
+    await mutate(updateServerState('ADD_ACTIVITY', formData), {
         optimisticData,
         rollbackOnError: true,
         populateCache: true,
@@ -242,14 +243,14 @@ const App: React.FC = () => {
   const handleUpdateActivity = useCallback(async (updatedActivityData: ActivityFormData) => {
     if (!editingActivity || !data) return;
     
-    const newActivities = data.activities.map(act =>
+    const optimisticActivities = data.activities.map(act =>
         act.id === editingActivity.id
           ? { ...act, ...updatedActivityData }
           : act
       ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const optimisticData = { ...data, activities: newActivities };
-    await mutate(updateServerState('SET_ACTIVITIES', newActivities), {
+    const optimisticData = { ...data, activities: optimisticActivities };
+    await mutate(updateServerState('UPDATE_ACTIVITY', { id: editingActivity.id, data: updatedActivityData }), {
         optimisticData,
         rollbackOnError: true,
         populateCache: true,
@@ -266,9 +267,9 @@ const App: React.FC = () => {
         confirmText: 'Supprimer',
         onConfirm: async () => {
             if (!data) return;
-            const newActivities = data.activities.filter(act => act.id !== activityId);
-            const optimisticData = { ...data, activities: newActivities };
-            await mutate(updateServerState('SET_ACTIVITIES', newActivities), {
+            const optimisticActivities = data.activities.filter(act => act.id !== activityId);
+            const optimisticData = { ...data, activities: optimisticActivities };
+            await mutate(updateServerState('DELETE_ACTIVITY', { id: activityId }), {
                 optimisticData,
                 rollbackOnError: true,
                 populateCache: true,
@@ -285,7 +286,7 @@ const App: React.FC = () => {
         confirmText: 'Désinscrire',
         onConfirm: async () => {
             if (!data) return;
-            const newActivities = data.activities.map(act => {
+            const optimisticActivities = data.activities.map(act => {
                 if (act.id === activityId) {
                     return { ...act, registrations: act.registrations.filter(reg => reg.id !== registrationId) };
                 }
@@ -294,11 +295,11 @@ const App: React.FC = () => {
 
             setSelectedActivity(prev => {
                 if (!prev || prev.id !== activityId) return prev;
-                return newActivities.find(act => act.id === activityId) || null;
+                return optimisticActivities.find(act => act.id === activityId) || null;
             });
             
-            const optimisticData = { ...data, activities: newActivities };
-            await mutate(updateServerState('SET_ACTIVITIES', newActivities), {
+            const optimisticData = { ...data, activities: optimisticActivities };
+            await mutate(updateServerState('UNREGISTER_YOUTH', { activityId, registrationId }), {
                 optimisticData,
                 rollbackOnError: true,
                 populateCache: true,
@@ -312,9 +313,9 @@ const App: React.FC = () => {
   const handleAddService = useCallback(async (service: Service) => {
     if (!data) return;
     if (service.name && service.code && !data.services.some(s => s.name.toLowerCase() === service.name.toLowerCase())) {
-      const newServices = [...data.services, service].sort((a, b) => a.name.localeCompare(b.name));
-      const optimisticData = { ...data, services: newServices };
-      await mutate(updateServerState('SET_SERVICES', newServices), {
+      const optimisticServices = [...data.services, service].sort((a, b) => a.name.localeCompare(b.name));
+      const optimisticData = { ...data, services: optimisticServices };
+      await mutate(updateServerState('ADD_SERVICE', service), {
         optimisticData,
         rollbackOnError: true,
         populateCache: true,
@@ -332,8 +333,8 @@ const App: React.FC = () => {
         confirmText: 'Supprimer',
         onConfirm: async () => {
             if (!data) return;
-            const newServices = data.services.filter(s => s.name !== serviceName);
-            const newActivities = data.activities.map(act => {
+            const optimisticServices = data.services.filter(s => s.name !== serviceName);
+            const optimisticActivities = data.activities.map(act => {
               if (!act.serviceAllocations || act.serviceAllocations.length === 0) {
                 return act;
               }
@@ -345,9 +346,8 @@ const App: React.FC = () => {
               return { ...act, serviceAllocations: newAllocations, spots: newTotalSpots };
             });
 
-            const payload = { activities: newActivities, services: newServices };
-            const optimisticData = { ...data, ...payload };
-            await mutate(updateServerState('SET_FULL_DATA', payload), {
+            const optimisticData = { ...data, activities: optimisticActivities, services: optimisticServices };
+            await mutate(updateServerState('DELETE_SERVICE', { name: serviceName }), {
                 optimisticData,
                 rollbackOnError: true,
                 populateCache: true,
@@ -360,9 +360,9 @@ const App: React.FC = () => {
 
   const handleUpdateService = useCallback(async (serviceName: string, newCode: string) => {
     if (!data) return;
-    const newServices = data.services.map(s => s.name === serviceName ? { ...s, code: newCode } : s);
-    const optimisticData = { ...data, services: newServices };
-    await mutate(updateServerState('SET_SERVICES', newServices), {
+    const optimisticServices = data.services.map(s => s.name === serviceName ? { ...s, code: newCode } : s);
+    const optimisticData = { ...data, services: optimisticServices };
+    await mutate(updateServerState('UPDATE_SERVICE', { name: serviceName, newCode }), {
       optimisticData,
       rollbackOnError: true,
       populateCache: true,

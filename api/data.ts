@@ -1,7 +1,8 @@
 
 
+
 import { kv } from '@vercel/kv';
-import { Activity, AppData, Service, Theme } from '../types';
+import { Activity, AppData, Service, Theme, ActivityFormData, RegistrationFormData, Registration } from '../types';
 import { INITIAL_ACTIVITIES, INITIAL_SERVICES } from '../constants';
 import { THEMES } from '../themes';
 
@@ -40,25 +41,82 @@ export default async function handler(req: Request) {
     }
 
     if (req.method === 'POST') {
-      const { type, payload } = await req.json();
       const data = await getAppData();
+      const { type, payload } = await req.json();
 
       switch (type) {
-        case 'SET_ACTIVITIES':
-          data.activities = payload as Activity[];
-          break;
-        case 'SET_SERVICES':
-          data.services = payload as Service[];
-          break;
+        case 'REGISTER_YOUTH': {
+            const { activityId, registrationData } = payload as { activityId: number; registrationData: RegistrationFormData };
+            const activity = data.activities.find(a => a.id === activityId);
+            if (activity) {
+                const newRegistration: Registration = { ...registrationData, id: Date.now() };
+                activity.registrations.push(newRegistration);
+            }
+            break;
+        }
+        case 'UNREGISTER_YOUTH': {
+            const { activityId, registrationId } = payload as { activityId: number; registrationId: number };
+            const activity = data.activities.find(a => a.id === activityId);
+            if (activity) {
+                activity.registrations = activity.registrations.filter(r => r.id !== registrationId);
+            }
+            break;
+        }
+        case 'ADD_ACTIVITY': {
+            const newActivity: Activity = { ...(payload as ActivityFormData), id: Date.now(), registrations: [] };
+            data.activities.push(newActivity);
+            data.activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            break;
+        }
+        case 'UPDATE_ACTIVITY': {
+            const { id, data: updatedData } = payload as { id: number; data: ActivityFormData };
+            const activityIndex = data.activities.findIndex(a => a.id === id);
+            if (activityIndex !== -1) {
+                data.activities[activityIndex] = { ...data.activities[activityIndex], ...updatedData };
+                data.activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            }
+            break;
+        }
+        case 'DELETE_ACTIVITY': {
+            const { id } = payload as { id: number };
+            data.activities = data.activities.filter(a => a.id !== id);
+            break;
+        }
+        case 'ADD_SERVICE': {
+            const newService = payload as Service;
+            if (!data.services.some(s => s.name.toLowerCase() === newService.name.toLowerCase())) {
+                data.services.push(newService);
+                data.services.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            break;
+        }
+        case 'UPDATE_SERVICE': {
+            const { name, newCode } = payload as { name: string, newCode: string };
+            const service = data.services.find(s => s.name === name);
+            if (service) {
+                service.code = newCode;
+            }
+            break;
+        }
+        case 'DELETE_SERVICE': {
+            const { name } = payload as { name: string };
+            data.services = data.services.filter(s => s.name !== name);
+            data.activities.forEach(act => {
+                if (act.serviceAllocations && act.serviceAllocations.length > 0) {
+                    const newAllocations = act.serviceAllocations.filter(alloc => alloc.serviceName !== name);
+                    if (newAllocations.length < act.serviceAllocations.length) {
+                        act.serviceAllocations = newAllocations;
+                        act.spots = newAllocations.reduce((sum, alloc) => sum + alloc.spots, 0);
+                    }
+                }
+            });
+            break;
+        }
         case 'SET_THEME':
           data.currentTheme = payload as Theme;
           break;
         case 'SET_ADMIN_PASSWORD':
           data.adminPassword = payload as string;
-          break;
-        case 'SET_FULL_DATA': // For complex operations that affect multiple slices
-          data.activities = (payload as { activities: Activity[] }).activities;
-          data.services = (payload as { services: Service[] }).services;
           break;
         default:
           return new Response(JSON.stringify({ message: 'Invalid action type' }), {
