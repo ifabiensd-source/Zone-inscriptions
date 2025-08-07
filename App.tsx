@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -94,9 +96,12 @@ const App: React.FC = () => {
   };
   
   useEffect(() => {
-    if (loggedInUser) {
+    // Persist only admin sessions to localStorage.
+    // Service sessions are not persisted, so they are logged out on refresh.
+    if (loggedInUser?.type === 'admin') {
         localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
     } else {
+        // This handles logout for admin, and ensures service user sessions are not stored.
         localStorage.removeItem('loggedInUser');
     }
   }, [loggedInUser]);
