@@ -49,7 +49,7 @@ const App: React.FC = () => {
 
   const [loggedInUser, setLoggedInUser] = useState<LoggedInUser | null>(() => {
     if (typeof window === 'undefined') return null;
-    const storedUser = sessionStorage.getItem('loggedInUser');
+    const storedUser = localStorage.getItem('loggedInUser');
     return storedUser ? JSON.parse(storedUser) : null;
   });
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
@@ -91,9 +91,9 @@ const App: React.FC = () => {
   
   useEffect(() => {
     if (loggedInUser) {
-        sessionStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+        localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
     } else {
-        sessionStorage.removeItem('loggedInUser');
+        localStorage.removeItem('loggedInUser');
     }
   }, [loggedInUser]);
 
