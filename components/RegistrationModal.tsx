@@ -1,5 +1,4 @@
 
-
 import React, { useState, FormEvent, useEffect } from 'react';
 import { Activity, Registration, RegistrationFormData } from '../types';
 import CloseIcon from './icons/CloseIcon';
@@ -17,6 +16,18 @@ interface RegistrationModalProps {
   isAdmin: boolean;
   onUnregister: (activityId: number, registrationId: number, youthName: string) => void;
 }
+
+const formatDateRangeForModal = (startDateString: string, endDateString: string) => {
+    const start = new Date(startDateString);
+    const end = new Date(endDateString || startDateString);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' };
+
+    if (start.getTime() === end.getTime() || !endDateString) {
+        return new Intl.DateTimeFormat('fr-FR', options).format(start);
+    }
+    
+    return `Du ${new Intl.DateTimeFormat('fr-FR', options).format(start)} au ${new Intl.DateTimeFormat('fr-FR', options).format(end)}`;
+};
 
 const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose, onRegister, isOpen, departments, isAdmin, onUnregister }) => {
   const [formData, setFormData] = useState<RegistrationFormData>({
@@ -50,16 +61,24 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.youthAge.trim()) {
+    if (isAdmin) {
+      if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.youthAge.trim()) {
         alert("Veuillez remplir le prénom, le nom et l'âge du jeune.");
         return;
+      }
+    } else {
+      if (!formData.firstName.trim() || !formData.youthAge.trim()) {
+        alert("Veuillez remplir le prénom et l'âge du jeune.");
+        return;
+      }
     }
     playSuccessSound();
     onRegister(formData);
   };
 
   const handleUnregisterClick = (registration: Registration) => {
-    onUnregister(activity.id, registration.id, `${registration.firstName} ${registration.lastName}`);
+    const youthName = [registration.firstName, registration.lastName].filter(Boolean).join(' ');
+    onUnregister(activity.id, registration.id, youthName);
   }
 
   return (
@@ -73,7 +92,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
               <span className="font-semibold">{activity.ageRestriction}</span>
             </div>
           )}
-          <p className="text-primary-accent text-sm mt-2">{new Date(activity.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</p>
+          <p className="text-primary-accent text-sm mt-2">{formatDateRangeForModal(activity.startDate, activity.endDate)}</p>
           <button onClick={onClose} className="absolute top-4 right-4 text-text-muted hover:text-text transition-colors">
             <CloseIcon />
           </button>
@@ -90,7 +109,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
                             <div className="flex justify-between items-center gap-4">
                                 {/* User Info */}
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-text truncate">{reg.firstName} {reg.lastName}</p>
+                                    <p className="font-semibold text-text truncate">{[reg.firstName, reg.lastName].filter(Boolean).join(' ')}</p>
                                     <p className="text-sm text-text-muted">{reg.youthAge} ans • <span className="font-medium text-primary-accent">{reg.department}</span></p>
                                 </div>
                                 
@@ -109,8 +128,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
                                         <button
                                             onClick={() => handleUnregisterClick(reg)}
                                             className="text-text-muted hover:text-danger transition-colors p-1"
-                                            aria-label={`Désinscrire ${reg.firstName} ${reg.lastName}`}
-                                            title={`Désinscrire ${reg.firstName} ${reg.lastName}`}
+                                            aria-label={`Désinscrire ${[reg.firstName, reg.lastName].filter(Boolean).join(' ')}`}
+                                            title={`Désinscrire ${[reg.firstName, reg.lastName].filter(Boolean).join(' ')}`}
                                         >
                                             <TrashIcon className="w-5 h-5" />
                                         </button>
@@ -134,8 +153,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
                   <input type="text" id="firstName" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required className="w-full bg-input-bg border-border rounded-lg p-2 text-text focus:ring-2 focus:ring-primary focus:outline-none" />
                 </div>
                  <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-text-muted mb-1">Nom</label>
-                  <input type="text" id="lastName" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required className="w-full bg-input-bg border-border rounded-lg p-2 text-text focus:ring-2 focus:ring-primary focus:outline-none" />
+                  <label htmlFor="lastName" className="block text-sm font-medium text-text-muted mb-1">Nom {isAdmin ? '' : <span className="font-normal text-xs">(optionnel)</span>}</label>
+                  <input type="text" id="lastName" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required={isAdmin} className="w-full bg-input-bg border-border rounded-lg p-2 text-text focus:ring-2 focus:ring-primary focus:outline-none" />
                 </div>
                 <div>
                   <label htmlFor="youthAge" className="block text-sm font-medium text-text-muted mb-1">Âge</label>
