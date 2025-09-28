@@ -72,7 +72,7 @@ const EditActivityModal: React.FC<EditActivityModalProps> = ({ isOpen, onClose, 
     }));
   };
 
-  // FIX: Explicitly cast values from Object.values to Number to prevent 'unknown' type errors.
+  // Fix: Explicitly cast values from Object.values to number to prevent type errors.
   const totalAllocatedSpots = Object.values(allocations).reduce((sum, spots) => sum + Number(spots || 0), 0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -97,7 +97,7 @@ const EditActivityModal: React.FC<EditActivityModalProps> = ({ isOpen, onClose, 
         ageRestriction: ageRestriction.trim() || undefined,
       };
     } else {
-      // FIX: Explicitly cast spots to Number to satisfy ActivityFormData type and prevent 'unknown' type errors from Object.entries.
+      // Fix: Explicitly cast spots to number to satisfy ActivityFormData type.
       const serviceAllocations = Object.entries(allocations)
         .filter(([, spots]) => Number(spots) > 0)
         .map(([serviceName, spots]) => ({ serviceName, spots: Number(spots) }));

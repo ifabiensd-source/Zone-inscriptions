@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -64,21 +65,9 @@ const App: React.FC = () => {
         }
     }
     
-    // Service session is temporary (per-tab)
-    const storedService = sessionStorage.getItem('loggedInUser');
-    if (storedService) {
-        try {
-            const serviceUser = JSON.parse(storedService);
-            if (serviceUser.type === 'service') {
-                return serviceUser;
-            }
-        } catch(e) {
-            sessionStorage.removeItem('loggedInUser');
-        }
-    }
-    
     return null;
   });
+  const [previousServiceUser, setPreviousServiceUser] = useState<LoggedInUser | null>(null);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [serviceLoginError, setServiceLoginError] = useState<string | null>(null);
 
@@ -122,17 +111,12 @@ const App: React.FC = () => {
     if (loggedInUser?.type === 'admin') {
         // Persist admin session
         localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
-        // Clean up session storage in case we switched from service to admin
-        sessionStorage.removeItem('loggedInUser');
     } else if (loggedInUser?.type === 'service') {
-        // Persist service session for the tab
-        sessionStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
         // Clean up local storage in case we switched from admin to service
         localStorage.removeItem('loggedInUser');
     } else {
-        // User logged out, clear both
+        // User logged out, clear local storage
         localStorage.removeItem('loggedInUser');
-        sessionStorage.removeItem('loggedInUser');
     }
   }, [loggedInUser]);
 
@@ -215,8 +199,14 @@ const App: React.FC = () => {
   
   const handleAdminAccess = () => {
     if (loggedInUser?.type === 'admin') {
-      setLoggedInUser(null);
+      // Restore previous service user if it exists, otherwise log out completely
+      setLoggedInUser(previousServiceUser);
+      setPreviousServiceUser(null); // Reset for next time
     } else {
+      // Store current service user if one is logged in before opening admin login
+      if (loggedInUser?.type === 'service') {
+        setPreviousServiceUser(loggedInUser);
+      }
       setAdminLoginError(null);
       setIsAdminLoginOpen(true);
     }
