@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Activity, LoggedInUser } from '../types';
 import TrashIcon from './icons/TrashIcon';
@@ -14,20 +15,46 @@ interface ActivityCardProps {
   loggedInUser: LoggedInUser | null;
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  // Add timeZone to prevent off-by-one day errors
-  return date.toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
+const formatDateRange = (startDateString: string, endDateString: string) => {
+  const start = new Date(startDateString);
+  const end = new Date(endDateString || startDateString);
+
+  // Timezone UTC to avoid off-by-one day errors
+  const optionsSingle: Intl.DateTimeFormatOptions = {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+  };
+
+  // If it's a single day
+  if (start.getTime() === end.getTime() || !endDateString) {
+    const formatted = new Intl.DateTimeFormat('fr-FR', optionsSingle).format(start);
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  const optionsEnd: Intl.DateTimeFormatOptions = {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
+  };
+
+  // Du 15 au 18 juillet 2024
+  if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    const startDay = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'UTC' }).format(start);
+    return `Du ${startDay} au ${new Intl.DateTimeFormat('fr-FR', optionsEnd).format(end)}`;
+  }
+
+  const optionsStart: Intl.DateTimeFormatOptions = {
+    day: 'numeric', month: 'long', timeZone: 'UTC'
+  };
+  
+  // Du 15 juillet au 18 août 2024
+  if (start.getFullYear() === end.getFullYear()) {
+     return `Du ${new Intl.DateTimeFormat('fr-FR', optionsStart).format(start)} au ${new Intl.DateTimeFormat('fr-FR', optionsEnd).format(end)}`;
+  }
+
+  // Du 15 décembre 2024 au 18 janvier 2025
+  return `Du ${new Intl.DateTimeFormat('fr-FR', optionsEnd).format(start)} au ${new Intl.DateTimeFormat('fr-FR', optionsEnd).format(end)}`;
 };
 
 const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onRegister, isAdmin, onDelete, onEdit, loggedInUser }) => {
-  const { id, title, description, date, startTime, endTime, spots, registrations, serviceAllocations, ageRestriction } = activity;
+  const { id, title, description, startDate, endDate, startTime, endTime, spots, registrations, serviceAllocations, ageRestriction } = activity;
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isPublic = !serviceAllocations || serviceAllocations.length === 0;
@@ -83,7 +110,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onRegister, isAdm
         <div className="flex justify-between items-start gap-4 mb-2">
             <h3 className="text-xl font-bold text-text flex-1 pr-20">{title}</h3>
             <div className="text-right flex-shrink-0">
-                <p className="font-semibold text-sm text-[var(--color-primary-accent)] capitalize">{formatDate(date)}</p>
+                <p className="font-semibold text-sm text-[var(--color-primary-accent)]">{formatDateRange(startDate, endDate)}</p>
                 <p className="text-sm text-text-muted">{startTime} - {endTime}</p>
             </div>
         </div>
@@ -122,8 +149,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onRegister, isAdm
             <div className="pl-2 border-l-2 border-border">
                <div className={`space-y-1 ${isExpanded ? 'max-h-32 overflow-y-auto custom-scrollbar pr-2' : ''}`}>
                  {participantsToShow.map(reg => (
-                    <p key={reg.id} className="text-text truncate" title={`${reg.firstName} ${reg.lastName} (${reg.department})`}>
-                      {reg.firstName} {reg.lastName} <span className="text-text-muted text-xs italic">({reg.department})</span>
+                    <p key={reg.id} className="text-text truncate" title={`${[reg.firstName, reg.lastName].filter(Boolean).join(' ')} (${reg.department})`}>
+                      {[reg.firstName, reg.lastName].filter(Boolean).join(' ')} <span className="text-text-muted text-xs italic">({reg.department})</span>
                     </p>
                   ))}
                </div>
