@@ -94,7 +94,7 @@ const EditActivityModal: React.FC<EditActivityModalProps> = ({ isOpen, onClose, 
         endTime,
         spots: publicSpots,
         serviceAllocations: [],
-        ageRestriction: ageRestriction.trim() || undefined,
+        ageRestriction: ageRestriction.trim(),
       };
     } else {
       // FIX: Use reduce for combined filter and map to ensure type safety.
@@ -122,7 +122,7 @@ const EditActivityModal: React.FC<EditActivityModalProps> = ({ isOpen, onClose, 
         endTime,
         spots: totalAllocatedSpots,
         serviceAllocations,
-        ageRestriction: ageRestriction.trim() || undefined,
+        ageRestriction: ageRestriction.trim(),
       };
     }
     

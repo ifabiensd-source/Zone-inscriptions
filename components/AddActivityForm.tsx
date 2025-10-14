@@ -55,7 +55,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ onAddActivity, servic
         endTime,
         spots: publicSpots,
         serviceAllocations: [],
-        ageRestriction: ageRestriction.trim() || undefined,
+        ageRestriction: ageRestriction.trim(),
       };
     } else {
       // FIX: Use reduce for combined filter and map to ensure type safety.
@@ -83,7 +83,7 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ onAddActivity, servic
         endTime,
         spots: totalAllocatedSpots,
         serviceAllocations,
-        ageRestriction: ageRestriction.trim() || undefined,
+        ageRestriction: ageRestriction.trim(),
       };
     }
     
