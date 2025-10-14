@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -155,6 +156,20 @@ const App: React.FC = () => {
 
   const handleRegister = useCallback(async (registrationData: RegistrationFormData) => {
     if (!selectedActivity || !data) return;
+
+    // --- DUPLICATE CHECK ---
+    const newYouthFullName = `${registrationData.firstName.trim()} ${registrationData.lastName?.trim() || ''}`.trim().toLowerCase();
+    const isDuplicate = selectedActivity.registrations.some(reg => {
+        const existingFullName = `${reg.firstName.trim()} ${reg.lastName?.trim() || ''}`.trim().toLowerCase();
+        return existingFullName === newYouthFullName;
+    });
+
+    if (isDuplicate) {
+        alert(`Le jeune "${registrationData.firstName} ${registrationData.lastName || ''}" est déjà inscrit à cette activité.`);
+        return; // Stop the registration process
+    }
+    // --- END DUPLICATE CHECK ---
+
     const isAdmin = loggedInUser?.type === 'admin';
 
     // Validation for non-admins

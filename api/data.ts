@@ -1,5 +1,6 @@
 
 
+
 import { kv } from '@vercel/kv';
 import { Activity, AppData, Service, Theme, ActivityFormData, RegistrationFormData, Registration } from '../types';
 import { INITIAL_ACTIVITIES, INITIAL_SERVICES } from '../constants';
@@ -98,8 +99,16 @@ export default async function handler(req: Request) {
               const { activityId, registrationData } = payload as { activityId: number; registrationData: RegistrationFormData };
               const activity = data.activities.find(a => a.id === activityId);
               if (activity) {
-                  const newRegistration: Registration = { ...registrationData, id: Date.now() };
-                  activity.registrations.push(newRegistration);
+                  // Server-side duplicate check for data integrity
+                  const newYouthFullName = `${registrationData.firstName.trim()} ${registrationData.lastName?.trim() || ''}`.trim().toLowerCase();
+                  const isDuplicate = activity.registrations.some(reg => 
+                      `${reg.firstName.trim()} ${reg.lastName?.trim() || ''}`.trim().toLowerCase() === newYouthFullName
+                  );
+
+                  if (!isDuplicate) {
+                      const newRegistration: Registration = { ...registrationData, id: Date.now() };
+                      activity.registrations.push(newRegistration);
+                  }
               }
               break;
           }
