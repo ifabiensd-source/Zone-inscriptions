@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import Header from './components/Header';
@@ -156,26 +155,29 @@ const App: React.FC = () => {
 
   const handleRegister = useCallback(async (registrationData: RegistrationFormData) => {
     if (!selectedActivity || !data) return;
+    const isAdmin = loggedInUser?.type === 'admin';
 
-    // Validation
-    const isPublic = !selectedActivity.serviceAllocations || selectedActivity.serviceAllocations.length === 0;
-    if (isPublic) {
-        if (selectedActivity.registrations.length >= selectedActivity.spots) {
-            alert("Désolé, cette activité est complète.");
-            return;
-        }
-    } else {
-        const serviceName = registrationData.department;
-        const allocation = selectedActivity.serviceAllocations.find(a => a.serviceName === serviceName);
-        if (!allocation) {
-            alert(`Le service "${serviceName}" n'a pas d'accès réservé pour cette activité.`);
-            return;
-        }
-        const registrationsForService = selectedActivity.registrations.filter(r => r.department === serviceName).length;
-        if (registrationsForService >= allocation.spots) {
-            alert(`Désolé, il n'y a plus de places disponibles pour le service "${serviceName}".`);
-            return;
-        }
+    // Validation for non-admins
+    if (!isAdmin) {
+      const isPublic = !selectedActivity.serviceAllocations || selectedActivity.serviceAllocations.length === 0;
+      if (isPublic) {
+          if (selectedActivity.registrations.length >= selectedActivity.spots) {
+              alert("Désolé, cette activité est complète.");
+              return;
+          }
+      } else {
+          const serviceName = registrationData.department;
+          const allocation = selectedActivity.serviceAllocations.find(a => a.serviceName === serviceName);
+          if (!allocation) {
+              alert(`Le service "${serviceName}" n'a pas d'accès réservé pour cette activité.`);
+              return;
+          }
+          const registrationsForService = selectedActivity.registrations.filter(r => r.department === serviceName).length;
+          if (registrationsForService >= allocation.spots) {
+              alert(`Désolé, il n'y a plus de places disponibles pour le service "${serviceName}".`);
+              return;
+          }
+      }
     }
 
     const newRegistration: Registration = { ...registrationData, id: Date.now() };
@@ -195,7 +197,7 @@ const App: React.FC = () => {
 
     playSuccessSound();
     handleCloseModal();
-  }, [selectedActivity, handleCloseModal, data, mutate]);
+  }, [selectedActivity, handleCloseModal, data, mutate, loggedInUser]);
   
   const handleAdminAccess = () => {
     if (loggedInUser?.type === 'admin') {

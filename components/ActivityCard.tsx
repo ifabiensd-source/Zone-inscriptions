@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Activity, LoggedInUser } from '../types';
 import TrashIcon from './icons/TrashIcon';
@@ -159,19 +160,19 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onRegister, isAdm
 
         <button
           onClick={() => onRegister(activity)}
-          disabled={isSoldOut}
+          disabled={isSoldOut && !isAdmin}
           className={`
             mt-6 w-full font-bold py-3 px-4 rounded-lg text-white uppercase tracking-wider text-sm
             transition-all duration-300 transform hover:scale-105
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card focus:ring-primary-accent
-            ${isSoldOut
+            ${isSoldOut && !isAdmin
                 ? 'bg-border cursor-not-allowed'
                 : 'bg-primary hover:opacity-90'
             }
           `}
-          aria-label={isSoldOut ? "Activité complète" : `S'inscrire à ${title}`}
+          aria-label={isSoldOut && !isAdmin ? "Activité complète" : `S'inscrire à ${title}`}
         >
-          {isSoldOut ? 'Complet' : "S'inscrire / Voir détails"}
+          {isSoldOut && !isAdmin ? 'Complet' : "S'inscrire / Voir détails"}
         </button>
       </div>
     </div>

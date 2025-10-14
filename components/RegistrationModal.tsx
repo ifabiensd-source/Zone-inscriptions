@@ -1,5 +1,4 @@
 
-
 import React, { useState, FormEvent, useEffect } from 'react';
 import { Activity, Registration, RegistrationFormData } from '../types';
 import CloseIcon from './icons/CloseIcon';
@@ -129,7 +128,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ activity, onClose
             )}
           </div>
           
-          {spotsAvailable && departments.length > 0 && (
+          {(isAdmin || spotsAvailable) && departments.length > 0 && (
             <div className="p-6 border-t border-border">
               <h3 className="text-lg font-semibold text-text mb-4">Inscrire un jeune</h3>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
