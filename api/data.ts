@@ -127,7 +127,13 @@ export default async function handler(req: Request) {
                   delete (newActivity as Partial<Activity>).endDate;
               }
               data.activities.push(newActivity);
-              data.activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              data.activities.sort((a, b) => {
+                const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                if (dateComparison !== 0) {
+                    return dateComparison;
+                }
+                return a.startTime.localeCompare(b.startTime);
+              });
               break;
           }
           case 'UPDATE_ACTIVITY': {
@@ -140,7 +146,13 @@ export default async function handler(req: Request) {
                       delete (newActivityData as Partial<Activity>).endDate;
                   }
                   data.activities[activityIndex] = newActivityData;
-                  data.activities.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                  data.activities.sort((a, b) => {
+                    const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+                    if (dateComparison !== 0) {
+                        return dateComparison;
+                    }
+                    return a.startTime.localeCompare(b.startTime);
+                  });
               }
               break;
           }

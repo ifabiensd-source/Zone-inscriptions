@@ -261,7 +261,13 @@ const App: React.FC = () => {
   const handleAddActivity = useCallback(async (formData: ActivityFormData) => {
     if (!data) return;
     const newActivity: Activity = { ...formData, id: Date.now(), registrations: [] };
-    const optimisticActivities = [...data.activities, newActivity].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const optimisticActivities = [...data.activities, newActivity].sort((a, b) => {
+        const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateComparison !== 0) {
+            return dateComparison;
+        }
+        return a.startTime.localeCompare(b.startTime);
+    });
     
     const optimisticData = { ...data, activities: optimisticActivities };
     await mutate(updateServerState('ADD_ACTIVITY', formData), {
@@ -290,7 +296,13 @@ const App: React.FC = () => {
         act.id === editingActivity.id
           ? { ...act, ...updatedActivityData }
           : act
-      ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      ).sort((a, b) => {
+        const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateComparison !== 0) {
+            return dateComparison;
+        }
+        return a.startTime.localeCompare(b.startTime);
+      });
 
     const optimisticData = { ...data, activities: optimisticActivities };
     await mutate(updateServerState('UPDATE_ACTIVITY', { id: editingActivity.id, data: updatedActivityData }), {
@@ -429,7 +441,13 @@ const App: React.FC = () => {
   const filteredActivities = useMemo(() => {
     if (!activities) return [];
     
-    const sortedActivities = [...activities].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedActivities = [...activities].sort((a, b) => {
+        const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateComparison !== 0) {
+            return dateComparison;
+        }
+        return a.startTime.localeCompare(b.startTime);
+    });
     
     if (!loggedInUser) return [];
 

@@ -27,8 +27,16 @@ const AdminScheduleGenerator: React.FC<AdminScheduleGeneratorProps> = ({ activit
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const serviceActivities = useMemo(() => {
+    const sorter = (a: Activity, b: Activity) => {
+        const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateComparison !== 0) {
+            return dateComparison;
+        }
+        return a.startTime.localeCompare(b.startTime);
+    };
+
     if (selectedService === ALL_SERVICES_OPTION.name) {
-        return [...activities].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        return [...activities].sort(sorter);
     }
     
     const service = services.find(s => s.name === selectedService);
@@ -37,7 +45,7 @@ const AdminScheduleGenerator: React.FC<AdminScheduleGeneratorProps> = ({ activit
     return activities.filter(act =>
         (act.serviceAllocations || []).length === 0 ||
         (act.serviceAllocations || []).some(alloc => alloc.serviceName === service.name)
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    ).sort(sorter);
   }, [activities, selectedService, services, ALL_SERVICES_OPTION.name]);
 
   const currentServiceForPreview = useMemo(() => {
