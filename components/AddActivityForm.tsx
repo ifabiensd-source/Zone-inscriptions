@@ -33,8 +33,8 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ onAddActivity, servic
     }));
   };
 
-  // Fix: Explicitly cast values from Object.values to number to prevent type errors.
-  const totalAllocatedSpots = Object.values(allocations).reduce((sum, spots) => sum + Number(spots || 0), 0);
+  // FIX: Use generic on reduce to ensure accumulator type is correctly inferred.
+  const totalAllocatedSpots = Object.values(allocations).reduce<number>((sum, spots) => sum + Number(spots || 0), 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +58,16 @@ const AddActivityForm: React.FC<AddActivityFormProps> = ({ onAddActivity, servic
         ageRestriction: ageRestriction.trim() || undefined,
       };
     } else {
-      // Fix: Explicitly cast spots to number to satisfy ActivityFormData type.
-      const serviceAllocations = Object.entries(allocations)
-        .filter(([, spots]) => Number(spots) > 0)
-        .map(([serviceName, spots]) => ({ serviceName, spots: Number(spots) }));
+      // FIX: Use reduce for combined filter and map to ensure type safety.
+      const serviceAllocations = Object.entries(allocations).reduce<
+        { serviceName: string; spots: number }[]
+      >((acc, [serviceName, spotsValue]) => {
+        const spots = Number(spotsValue);
+        if (spots > 0) {
+          acc.push({ serviceName, spots });
+        }
+        return acc;
+      }, []);
 
       if (!title || !date || !startTime || !endTime || serviceAllocations.length === 0) {
         alert("Veuillez remplir les champs obligatoires et allouer des places à au moins un service.");
